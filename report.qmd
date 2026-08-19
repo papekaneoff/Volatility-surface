@@ -196,7 +196,7 @@ Each parameter has a direct financial meaning: $a$ is the overall variance level
 
 ## Calibration Procedure
 
-For each maturity, we calibrate the five SVI parameters by minimizing the relative squared error between the model's implied total variance and the market's observed total variance, restricted to a liquid log-moneyness window ($-0.5 < k < 0.5$) to avoid unreliable deep ITM/OTM quotes:
+For each maturity, we calibrate the five SVI parameters by minimizing the relative squared error between the model's implied total variance and the market's observed total variance, restricted to a liquid log-moneyness window ($-0.5 < k < 0.5$) to avoid unreliable deep ITM/OTM quotes. We also exclude maturities under roughly one week (`min_maturity=0.02`): near-expiry ("0DTE") options have near-zero time value, which makes implied volatility numerically unstable to back out, and we observed Yahoo Finance occasionally returning suspicious clustered placeholder values (exact fractions like 0.5, 0.25, 0.125) rather than genuine market-implied volatility for these contracts:
 
 $$
 \hat{\theta} = \arg\min_{\theta} \sum_i \left(\frac{w_\theta(k_i) - w_i^{\text{obs}}}{w_i^{\text{obs}}}\right)^2
@@ -236,7 +236,8 @@ from svi_model import plot_svi_fit
 import yfinance as yf
 from vol_surface import get_option_chain, time_to_maturity
 
-example_row = params_df.loc[params_df["n_points_used"].idxmax()]
+example_candidates = params_df[params_df["n_points_used"] >= 15]
+example_row = example_candidates.iloc[(example_candidates["maturity"] - 0.1).abs().argsort().iloc[0]]
 example_expiration = example_row["expiration"]
 example_chain = get_option_chain("AAPL", example_expiration)
 example_chain = example_chain[example_chain["volume"] >= 10]
@@ -248,6 +249,12 @@ plot_svi_fit(example_chain["strike"].values, example_chain["impliedVolatility"].
 ```
 
 > **Reading the fit quality table:** Relative RMSE typically stays in the low single-digit percentages for maturities with enough liquid points, confirming that the calibrated curves are not just plausible-looking but numerically close to the observed quotes. Maturities with very few points (bottom of the `N points` column) carry proportionally less statistical confidence, even when their relative RMSE looks small, a small number of points is easy to fit closely and does not by itself validate the SVI shape between quotes.
+
+::: {.callout-note icon=false}
+## 💡 Why do some strikes show identical implied volatilities?
+
+Looking closely at individual fit plots, several adjacent strikes sometimes share the exact same implied volatility. This is a genuine market microstructure effect, not a data error: options far from the money are often illiquid enough that their quoted price sits at the exchange's minimum price increment (e.g. \$0.05). Since Black-Scholes vega is small far from the money, a tiny price difference translates into a large implied volatility difference, so several strikes quoted at the same minimum tick can back out to identical implied volatilities. This is expected behaviour for real, retail-sourced options data, and one more reason the fit-quality metrics above should be read alongside the number of liquid points available.
+:::
 
 ---
 

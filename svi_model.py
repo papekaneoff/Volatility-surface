@@ -105,23 +105,33 @@ def calibrate_all_maturities(ticker_symbol: str, min_volume: int = 10, k_min: fl
     return results
 
 
-def plot_svi_fit(strikes, ivs, spot, maturity, params: dict):
+def plot_svi_fit(strikes, ivs, spot, maturity, params: dict, k_min: float = -0.5, k_max: float = 0.5):
     """
     Compare visuellement les IV observées sur le marché vs la courbe SVI calibrée.
+    N'affiche que les points dans la fenêtre [k_min, k_max] réellement utilisée
+    pour la calibration : afficher des points hors fenêtre donnerait une image
+    trompeuse (la courbe semblerait "rater" des points qu'elle n'a jamais
+    essayé de fitter).
     """
-    k_observed = np.log(strikes / spot)
+    k_all = np.log(strikes / spot)
+    mask = (k_all >= k_min) & (k_all <= k_max)
+    k_observed = k_all[mask]
+    ivs_observed = ivs[mask]
+
+    n_excluded = (~mask).sum()
 
     # On génère une courbe lisse pour visualiser le fit
-    k_smooth = np.linspace(k_observed.min(), k_observed.max(), 200)
+    k_smooth = np.linspace(k_min, k_max, 200)
     w_smooth = svi_total_variance(k_smooth, (params["a"], params["b"], params["rho"], params["m"], params["sigma"]))
     iv_smooth = np.sqrt(w_smooth / maturity)
 
     plt.figure(figsize=(8, 5))
-    plt.scatter(k_observed, ivs, color="red", label="Observed IV (market)")
+    plt.scatter(k_observed, ivs_observed, color="red", label="Observed IV (used in calibration)")
     plt.plot(k_smooth, iv_smooth, color="blue", label="Calibrated SVI curve")
     plt.xlabel("Log-moneyness (k)")
     plt.ylabel("Implied volatility")
-    plt.title(f"SVI calibration, maturity = {maturity:.4f} years")
+    subtitle = f" ({n_excluded} illiquid points outside [{k_min}, {k_max}] excluded)" if n_excluded > 0 else ""
+    plt.title(f"SVI calibration, maturity = {maturity:.4f} years{subtitle}")
     plt.legend()
     plt.show()
 

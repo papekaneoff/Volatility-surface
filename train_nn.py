@@ -73,16 +73,14 @@ def predict_svi_params(model, scaler_X, scaler_y, spot: float, maturity: float, 
 
 
 def evaluate_on_real_market(ticker_symbol: str, model, scaler_X, scaler_y,
-                             min_volume: int = 10, min_points: int = 5) -> pd.DataFrame:
+                             min_volume: int = 10, min_points: int = 5, min_maturity: float = 0.02) -> pd.DataFrame:
     """
     Compare, échéance par échéance, les paramètres SVI obtenus par calibration
     classique (scipy.optimize, notre "vérité de référence") à ceux prédits par
     le réseau de neurones, sur les VRAIES données de marché d'aujourd'hui.
 
-    Contrairement au R² calculé plus haut (qui mesure la performance sur des
-    smiles SYNTHÉTIQUES jamais vus), cette fonction donne une mesure honnête
-    de la fiabilité du NN sur des données réelles, celles qu'on utiliserait
-    vraiment en pratique.
+    min_maturity exclut les échéances quasi expirées (0DTE), où l'IV Yahoo
+    devient numériquement peu fiable (voir svi_model.calibrate_all_maturities).
     """
     import yfinance as yf
     from vol_surface import get_spot_price, get_option_chain, time_to_maturity
@@ -100,7 +98,7 @@ def evaluate_on_real_market(ticker_symbol: str, model, scaler_X, scaler_y,
 
         maturity = time_to_maturity(expiration)
 
-        if maturity <= 0.001 or len(chain) < min_points:
+        if maturity <= min_maturity or len(chain) < min_points:
             continue
 
         atm_iv = chain["impliedVolatility"].iloc[len(chain) // 2]
