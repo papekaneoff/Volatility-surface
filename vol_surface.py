@@ -3,11 +3,11 @@ import pandas as pd
 import numpy as np
 
 def get_option_chain(ticker_symbol: str, expiration: str) -> pd.DataFrame:
-
+    
     ticker = yf.Ticker(ticker_symbol)
     chain = ticker.option_chain(expiration)
-
-    return chain.calls
+    calls = chain.calls
+    return calls[calls["impliedVolatility"] > 0.005].copy()
 
 
 from datetime import datetime

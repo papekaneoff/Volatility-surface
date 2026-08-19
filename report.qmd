@@ -2,7 +2,7 @@
 title: "Implied Volatility Surface: SVI Calibration & Machine Learning Extension"
 author:
   - "Pape Kane"
-institute: MSc Student in Actuarial Science Hec Lausanne, Computer Science and Physics Teacher 
+institute: MSc Student, Quantitative Finance
 date: today
 title-block-banner: "#2C6E49"
 title-block-banner-color: "white"
@@ -22,6 +22,7 @@ format:
     math: mathjax
     code-tools: true
     code-fold: true
+    embed-resources: true
     include-in-header:
       text: |
         <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
@@ -235,11 +236,12 @@ from svi_model import plot_svi_fit
 import yfinance as yf
 from vol_surface import get_option_chain, time_to_maturity
 
-example_expiration = params_df.iloc[3]["expiration"]
+example_row = params_df.loc[params_df["n_points_used"].idxmax()]
+example_expiration = example_row["expiration"]
 example_chain = get_option_chain("AAPL", example_expiration)
 example_chain = example_chain[example_chain["volume"] >= 10]
 example_maturity = time_to_maturity(example_expiration)
-example_params = params_df.iloc[3].to_dict()
+example_params = example_row.to_dict()
 
 plot_svi_fit(example_chain["strike"].values, example_chain["impliedVolatility"].values,
              spot, example_maturity, example_params)
