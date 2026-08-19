@@ -2,7 +2,7 @@
 title: "Implied Volatility Surface: SVI Calibration & Machine Learning Extension"
 author:
   - "Pape Kane"
-institute: MSc Student, Quantitative Finance
+institute: MSc Student in Actuarial Science Hec Lausanne, Computer Science and Physics Teacher 
 date: today
 title-block-banner: "#2C6E49"
 title-block-banner-color: "white"

@@ -1,8 +1,5 @@
 __pycache__/
 *.pyc
 .DS_Store
-report.html
 report.pdf
 report.pptx
-report_files/
-.vscode/
